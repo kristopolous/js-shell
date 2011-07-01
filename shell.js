@@ -1,5 +1,9 @@
 self.Gdb = (function(){
   var
+    styleSheet = {
+      h3: 'margin:0;font-size:16px;font-weight:normal;margin-top:8px',
+      span: 'display:inline-block;min-width:250px;margin-left:5px'
+    },
     func,
     container,
     buffer = [],
@@ -19,7 +23,25 @@ self.Gdb = (function(){
     addEvent = window.attachEvent ? 'attachEvent' : 'addEventListener',
     outCount = 0;
 
-   function getTime(){
+  function uncss(dom, obj) {
+    for(var key in obj) {
+      dom.style[key] = 'inherit';
+    }
+  }
+  function css(dom, obj) {
+    for(var key in obj) {
+      dom.style[key] = obj[key];
+    }
+  }
+
+  function open(obj) {
+    return '<' + obj + ' ' + style(obj) + '>';
+  }
+  function style(obj) {
+    return "style='" + styleSheet[obj] + "'";
+  }
+
+  function getTime(){
     var d = new Date();
     return ((d.getTime() - epoch.getTime()) / 1000).toFixed(3);
   }
@@ -109,40 +131,32 @@ self.Gdb = (function(){
         data = dbg.firstChild;
       } else {
         pub.container = container = document.createElement('div');
+        css(container, {
+          color: '#000',
+          fontFamily: 'monospace, monospace',
+          padding: '4px'
+        });
+
         container.setAttribute('id', 'dbg');
         container.id = 'dbg';
 
         pub.input = input = document.createElement('input');
-        input.setAttribute('class', 'in');
-        input.className = 'in';
+        css(input, {
+          border: '0',
+          width: '100%' 
+        });
 
         data = document.createElement('div');
-        data.setAttribute('class', 'data');
-        data.className = 'data';
-        
-        var ss = document.createElement('link');
-        ss.setAttribute('rel', 'stylesheet');
-        ss.setAttribute('href', 'http://qaa.ath.cx/shell.css');
-
-
-        _document.body.parentNode.firstChild.appendChild(ss);
+        css(data, {
+          height: '800px',
+          'overflow-Y': 'scroll',
+          width: '100%' 
+        });
 
         container.appendChild(data);
         container.appendChild(input);
 
         _document.body.appendChild(container);
-
-        with(_document.body.parentNode.style) {
-          width = 'auto';
-          height = 'auto';
-          margin = '0';
-        }
-        
-        with(_document.body.style) {
-          width = 'auto';
-          height = 'auto';
-          marginBottom = '20px';
-        }
       }
 
       data[addEvent]('mouseup', function(){
@@ -212,31 +226,31 @@ self.Gdb = (function(){
   }
 
   pub.reset = function(name){
-          if(name in counters) {
-                counters[name] = 0;
-          Gdb(name + ': (reset)');
-      }
+    if(name in counters) {
+      counters[name] = 0;
+      Gdb(name + ': (reset)');
+    }
   }
 
-    var counters = {};
-    pub.incr = function(name){
-      if(name in counters) {
-            counters[name]++;
-        } else {
-            counters[name] = 1;
-        }
-      Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
-    }
+  var counters = {};
+  pub.incr = function(name){
+    if(name in counters) {
+          counters[name]++;
+      } else {
+          counters[name] = 1;
+      }
+    Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
+  }
 
 
-    pub.decr = function(name) {
-      if(name in counters) {
-            counters[name]--;
-        } else {
-            counters[name] = 0;
-        }
-      Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
-    }
+  pub.decr = function(name) {
+    if(name in counters) {
+          counters[name]--;
+      } else {
+          counters[name] = 0;
+      }
+    Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
+  }
 
   pub.raw = function(){
     var old = noTime;
@@ -496,14 +510,14 @@ Gdb.walk = function(eObj, noemit, hitIn) {
           emit = '';
         }
 
-        o[cat].push('<span><a onclick=Gdb.extend("' + base + '",this' + (
+        o[cat].push(open('span') + '<a onclick=Gdb.extend("' + base + '",this' + (
             (tmp == 'function') ?
               ',"function"' :
               ''
             ) +
           ')>' + e + '</a> ' + emit + '</span>');
       } catch(ex) {
-        o[cat].push('<span>' + e + ' (' + ex.toString().substr(0,20) + ')</span>');
+        o[cat].push(open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
       }
     }
 
@@ -526,7 +540,7 @@ Gdb.walk = function(eObj, noemit, hitIn) {
     var fillers = {Values:'<br>', Objects:'', Functions:''};
     for(cat in fillers) {
       if(o[cat].length) {
-        Gdb.raw('<h3>' + cat + '</h3>' +
+        Gdb.raw(open('h3') + cat + '</h3>' +
           o[cat].sort().join(fillers[cat])
         );
       }
@@ -577,12 +591,17 @@ Gdb.extend = function(base,el,type) {
 
 
 Gdb.flash = function(){
-  Gdb.data.className += ' inv';
-  Gdb.input.className += ' inv';
+  var inv= {
+    background: 'black !important',
+    color: 'white !important'
+  };
+
+  css(Gdb.data, inv);
+  css(Gdb.input, inv);
 
   setTimeout(function(){
-    Gdb.data.className = Gdb.data.className.replace(' inv', '');
-    Gdb.input.className = Gdb.input.className.replace(' inv', '');
+    uncss(Gdb.data, inv);
+    uncss(Gdb.input, inv);
   }, 150);
 }
 
