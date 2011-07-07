@@ -1,4 +1,4 @@
-(function(){
+self.Shell = (function(){
   var
     styleSheet = {
       h3: 'margin:0;font-size:16px;font-weight:normal;margin-top:8px',
@@ -37,6 +37,34 @@
     addEvent = window.attachEvent ? 'attachEvent' : 'addEventListener',
     outCount = 0;
 
+  var _ = {
+    isArr: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
+  };
+
+  // each from db.js
+  var each = Array.prototype.forEach ?
+    function (obj, cb) {
+      if (_.isArr(obj)) { 
+        obj.forEach(cb);
+      } else {
+        for( var key in obj ) {
+          cb(key, obj[key]);
+        }
+      }
+    } :
+
+    function (obj, cb) {
+      if (_.isArr(obj)) {
+        for ( var i = 0, len = obj.length; i < len; i++ ) { 
+          cb(obj[i], i);
+        }
+      } else {
+        for( var key in obj ) {
+          cb(key, obj[key]);
+        }
+      }
+   };
+
   function uncss(dom, obj) {
     for(var key in obj) {
       dom.style[key] = 'inherit';
@@ -47,6 +75,16 @@
     for(var key in obj) {
       dom.style[key] = obj[key];
     }
+  }
+
+  function element(type, propMap) {
+    var element = document.createElement(type);
+
+    for(var prop in propMap) {
+      element[prop] = propMap[prop];
+    }
+
+    return element;
   }
 
   function open(obj) {
@@ -61,7 +99,7 @@
     return ((d.getTime() - epoch.getTime()) / 1000).toFixed(3);
   }
 
-  pub = function() {
+  function print() {
     var
       argsList = Array.prototype.slice.call(arguments),
       args = argsList.toString(),
@@ -78,7 +116,12 @@
           elCache[elCache.ctr] = argsList[ix];
 
           // we do a reference breadcrumb to the screen
-          raw('<a onclick=Gdb.extend("",this)>Gdb.cache[' + elCache.ctr + ']</a>');
+          raw(element('a', {
+            onclick: function(){
+              extend("",this)
+            },
+            innerHTML: '_.cache[' + elCache.ctr + ']'
+          });
 
           walk(argsList[ix]);
         } else {
@@ -119,107 +162,18 @@
 
   }
   
-  pub.scroll = true;
+  _.scroll = true;
   // After declaration, we create a backreference
   // to the cache to expose it
-  pub.cache = elCache;
-  pub.history = history;
+  _.cache = elCache;
+  _.history = history;
 
-  pub.init = function() {
-    if(container) {
-      return;
-    }
 
-    history.data = [];
-    history.ptr = history.data.length;
-
-//    pub.win = window.open('', 'debugger', 'width=500,height=400');
-
-    setTimeout(function(){
-      var 
-        _window = pub.win || window,
-        _document = (_window.content && _window.content.document) || document,
-        dbg = _document.getElementById('dbg');
-
-      if(dbg) {
-        pub.container = container = dbg;
-        $input = _document.getElementsByTagName('input')[0];
-        data = dbg.firstChild;
-      } else {
-        pub.container = container = document.createElement('div');
-        css(container, {
-          color: '#000',
-          fontFamily: 'monospace, monospace',
-          padding: '4px'
-        });
-
-        container.setAttribute('id', 'dbg');
-        container.id = 'dbg';
-
-        $input = document.createElement('input');
-        css($input, {
-          border: '0',
-          width: '100%' 
-        });
-
-        data = document.createElement('div');
-        css(data, {
-          height: '800px',
-          'overflow-Y': 'scroll',
-          width: '100%' 
-        });
-
-        container.appendChild(data);
-        container.appendChild($input);
-
-        _document.body.appendChild(container);
-      }
-
-      data[addEvent]('mouseup', function(){
-        $input.focus();
-      }, true);
-
-      data.innerHTML += buffer.join('');
-      buffer = [];
-      pub.data = data;
-
-      $input[addEvent]('keydown', function(e) {
-        var kc;
-
-        if (window.event) kc = window.event.keyCode;
-        else if (e) kc = e.which;
-
-        if(kc == 38) {
-          if(history.ptr > 0) {
-            history.ptr --;
-            $input.value = history.data[history.ptr];
-          } else {
-            flash();
-          }
-        } else if(kc == 40) {
-          if(history.ptr < (history.data.length - 1)) {
-            history.ptr ++;
-            $input.value = history.data[history.ptr];
-          } else {
-            history.ptr = history.data.length;
-            $input.value = "";
-          }
-        } else if(kc == 9) {
-          e.preventDefault();
-          e.stopPropagation();
-          tabComplete();
-        } else if(kc == 13) {
-          enter(this);
-        }
-      }, true);
-    }, 50);
-  }
-
-  pub.pre = function(){
+  function pre(){
     var old = noTime;
     noTime = true;
 
-    pub([
+    print([
       '<pre>', 
       Array.prototype.slice.call(arguments)
         .toString()
@@ -230,70 +184,82 @@
     noTime = old;
   }
 
-  pub.tabCreate = function(name) {
-  }
 
-  pub.reset = function(name){
+  function reset(name){
     if(name in counters) {
       counters[name] = 0;
-      Gdb(name + ': (reset)');
+      print(name + ': (reset)');
     }
   }
 
   var counters = {};
-  pub.incr = function(name){
+  function incr(name){
     if(name in counters) {
       counters[name]++;
     } else {
       counters[name] = 1;
     }
 
-    Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
+    print([
+      element('a', {
+        onclick: function(){
+          reset(name)
+        },
+        innerHTML: name
+      }),
+      ': ' + counters[name]
+    ]);
   }
 
-
-  pub.decr = function(name) {
+  function decr(name) {
     if(name in counters) {
       counters[name]--;
     } else {
       counters[name] = 0;
     }
 
-    Gdb('<a onclick=Gdb.reset("' + name + '")>' + name + '</a>: ' + counters[name]);
+    print([
+      element('a', {
+        onclick: function(){
+          reset(name)
+        },
+        innerHTML: name
+      }),
+      ': ' + counters[name]
+    ]);
   }
 
-  pub.raw = function(){
+  function raw(){
     var old = noTime;
     noTime = true;
-    pub(Array.prototype.slice.call(arguments).toString());
+    print(Array.prototype.slice.call(arguments).toString());
     noTime = old;
   }
 
-  pub.watch = function(f, fName, args) {
+  function watch(f, fName, args) {
     raw(f, fName, args.toSource());
-    Gdb.stack(2);
+    stack(2);
     $watchList[f][0].apply(this, args);
     $data.scrollTop = $data.scrollHeight;
   }
 
-  pub.stack = function(count) {
-    var stack;
+  function stack(count) {
+    var _stack;
 
     try {
       throw new Error();
     } catch(e) {
-      stack = e.stack.split('\n');
-      stack.shift();
-      stack.shift();
+      _stack = e.stack.split('\n');
+      _stack.shift();
+      _stack.shift();
       if(count) {
         while(count-- > 0) {
-          stack.shift();
+          _stack.shift();
         }
       }
-      Gdb.pre(stack.join('\n').replace(/\([^\)]*./g, ''));
+      pre(_stack.join('\n').replace(/\([^\)]*./g, ''));
     }
   }
-
 
   var $cmd = {
     clear: function(){
@@ -333,6 +299,7 @@
     watch: function(tmp) {
       if(tmp.length == 1) {
         var flag = false;
+
         for(ix in watchList) {
           raw('[' + ix + '] ' + watchList[ix][1]);
           flag = true;
@@ -400,6 +367,7 @@
 
             if(((type == 'number') || (type == 'string')) && 
                val.toString().search(term) > -1) {
+
               foundCount++;
               raw(stack.join('.') + '.' + e + ': ' + eObj[e].toString().substr(0,30));
             } else if(type == 'object') {
@@ -423,9 +391,11 @@
           
     '?': function(){
       var d = [];
-      for(i in Gdb.cmd) {
+
+      for(i in $cmd) {
         d.push(i);
       }
+
       d.sort();
       raw(d.join('<br>'));
     }
@@ -435,8 +405,9 @@
     if(!$input) {
       return;
     }
-    var tmp,
-        o = {
+    var 
+      tmp,
+      o = {
         'Objects':[],
         'Functions':[],
         'Values':[]
@@ -569,7 +540,7 @@
     $input.value = (combined + ap).replace(/^\./, '');
 
     if(!ap.length) {
-      Gdb.tabComplete();
+      tabComplete();
     }
 
     $input.selectionStart = base.length;
@@ -611,14 +582,19 @@
 
     tmp = tmp.split(' ');
 
-    if(Gdb.cmd[tmp[0]]) {
-      Gdb.cmd[tmp[0]](tmp);
+    if($cmd[tmp[0]]) {
+      $cmd[tmp[0]](tmp);
     } else {
       try {
         $_ = (new Function("", "return " + tmp.join(' ')))();
 
         if($_ !== null) {
-          raw('<a onclick=Gdb.extend("' + tmp.join(' ').replace(/;$/,'') + '")>' + $_.toString() + '</a>');
+          raw(element('a', {
+            onclick: function() {
+              extend(tmp.join(' ').replace(/;$/,''))
+            },
+            innerHTML: $_.toString()
+          }));
         } else {
           raw('(null)');
         }
@@ -657,8 +633,10 @@
 
     try {
       eval(toSend);
-      var toWalk = Function("", "return " + toSend)(),
-          tmp = input.value;
+
+      var 
+        toWalk = Function("", "return " + toSend)(),
+        tmp = input.value;
 
       if(typeof toWalk == 'undefined') {
         throw(0);
@@ -693,7 +671,7 @@
       try{
         base = Function("", "return " + base)();
       } catch(ex){
-        Gdb('Failed to expand: ', baseOrig);
+        print('Failed to expand: ', baseOrig);
       }
 
       for(var ix in base) {
@@ -705,7 +683,18 @@
           }
 
           lastType = typeof(base[ix]);
-          o.push('&nbsp;<a onclick=Gdb.backup(this)>' + ix + '</a> (' + lastType + ')');
+
+          each([
+            '&nbsp;',
+            element('a', {
+              onclick: function(){
+                backup(this);
+              },
+              innerHTML: ix
+            }),
+            '(' + lastType + ')'
+          ], o.push);
+
           last = ix;
         }
       }
@@ -734,6 +723,89 @@
     $input.focus();
   }
 
-  pub.init();
-//console.log = raw;
+  var pub = function(dom) {
+    if(container) {
+      return;
+    }
+
+    history.data = [];
+    history.ptr = history.data.length;
+
+    dbg = document.getElementById('dbg');
+
+    if(dbg) {
+      pub.container = container = dbg;
+      $input = document.getElementsByTagName('input')[0];
+      data = dbg.firstChild;
+    } else {
+      pub.container = container = document.createElement('div');
+      css(container, {
+        color: '#000',
+        fontFamily: 'monospace, monospace',
+        padding: '4px'
+      });
+
+      container.setAttribute('id', 'dbg');
+      container.id = 'dbg';
+
+      $input = document.createElement('input');
+      css($input, {
+        border: '0',
+        width: '100%' 
+      });
+
+      data = document.createElement('div');
+      css(data, {
+        height: '800px',
+        'overflow-Y': 'scroll',
+        width: '100%' 
+      });
+
+      container.appendChild(data);
+      container.appendChild($input);
+
+      dom.appendChild(container);
+    }
+
+    data[addEvent]('mouseup', function(){
+      $input.focus();
+    }, true);
+
+    data.innerHTML += buffer.join('');
+    buffer = [];
+    _.data = data;
+
+    $input[addEvent]('keydown', function(e) {
+      var kc;
+
+      if (window.event) kc = window.event.keyCode;
+      else if (e) kc = e.which;
+
+      if(kc == 38) {
+        if(history.ptr > 0) {
+          history.ptr --;
+          $input.value = history.data[history.ptr];
+        } else {
+          flash();
+        }
+      } else if(kc == 40) {
+        if(history.ptr < (history.data.length - 1)) {
+          history.ptr ++;
+          $input.value = history.data[history.ptr];
+        } else {
+          history.ptr = history.data.length;
+          $input.value = "";
+        }
+      } else if(kc == 9) {
+        e.preventDefault();
+        e.stopPropagation();
+        tabComplete();
+      } else if(kc == 13) {
+        enter(this);
+      }
+    }, true);
+  }
+
+
+  return pub;
 })();
