@@ -143,12 +143,12 @@ self.Gdb = (function(){
         pub.input = input = document.createElement('input');
         css(input, {
           border: '0',
+          background: '#FBFFBF',
           width: '100%' 
         });
 
         data = document.createElement('div');
         css(data, {
-          height: '800px',
           'overflow-Y': 'scroll',
           width: '100%' 
         });
@@ -742,6 +742,8 @@ Gdb.tabComplete = function(){
 
   Gdb.data.scrollTop = Gdb.data.scrollHeight;
 
-  Gdb.input.focus();
+  setTimeout(function(){
+    Gdb.input.focus();
+  }, 100);
 }
 //console.log = Gdb.raw;
