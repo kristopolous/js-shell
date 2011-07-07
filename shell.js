@@ -34,7 +34,7 @@ self.Gdb = (function(){
     }
   }
 
-  function open(obj) {
+  self._open = function(obj) {
     return '<' + obj + ' ' + style(obj) + '>';
   }
   function style(obj) {
@@ -510,7 +510,7 @@ Gdb.walk = function(eObj, noemit, hitIn) {
           emit = '';
         }
 
-        o[cat].push(open('span') + '<a onclick=Gdb.extend("' + base + '",this' + (
+        o[cat].push(_open('span') + '<a onclick=Gdb.extend("' + base + '",this' + (
             (tmp == 'function') ?
               ',"function"' :
               ''
@@ -540,7 +540,7 @@ Gdb.walk = function(eObj, noemit, hitIn) {
     var fillers = {Values:'<br>', Objects:'', Functions:''};
     for(cat in fillers) {
       if(o[cat].length) {
-        Gdb.raw(open('h3') + cat + '</h3>' +
+        Gdb.raw(_open('h3') + cat + '</h3>' +
           o[cat].sort().join(fillers[cat])
         );
       }
