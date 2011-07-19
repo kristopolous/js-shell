@@ -36,6 +36,7 @@
       mootools: 'http://mootools.net/download/get/mootools-core-1.3.2-full-compat-yc.js'
     },
 
+    counters = {},
     tabList = {},
     active = false,
     addEvent = window.attachEvent ? 'attachEvent' : 'addEventListener',
@@ -58,7 +59,6 @@
 
   var each = Array.prototype.forEach ?
     function (obj, cb) {
-      console.log(obj, cb, obj.forEach);
       if (_.isArr(obj)) { 
         obj.forEach(cb);
       } else {
@@ -112,6 +112,10 @@
     return "style='" + styleSheet[obj] + "'";
   }
 
+  function runcode(str) {
+    return Function("", "return " + str)();
+  }
+
   function print() {
     var
       argsList = Array.prototype.slice.call(arguments),
@@ -131,9 +135,15 @@
           $elCache[$elCache.ctr] = argsList[ix];
 
           // we do a reference breadcrumb to the screen
-          raw(element('a', {
+          print(element('a', {
+
+            style: [
+              'color:blue',
+              'cursor:default'
+            ].join(';'),
+
             onclick: function(){
-              extend("",this);
+              _Shell.extend("",this);
             },
             'innerHTML': 'self._Shell.$.cache[' + $elCache.ctr + ']'
           }));
@@ -167,14 +177,14 @@
 
       $data = par.insertBefore($data, par.lastChild);
     }
-    if(pub.scroll) {
+    if($.scroll) {
       $data.scrollTop = $data.scrollHeight;
     }
 
   }
   
 
-  function pre(){
+  print.pre = function(){
     print([
       '<pre>', 
       Array.prototype.slice.call(arguments)
@@ -184,7 +194,6 @@
       '</pre>'].join(''));
   }
 
-
   function reset(name){
     if(name in counters) {
       counters[name] = 0;
@@ -192,7 +201,6 @@
     }
   }
 
-  var counters = {};
   function incr(name){
     if(name in counters) {
       counters[name]++;
@@ -229,12 +237,9 @@
     ]);
   }
 
-  function raw(){
-    print(Array.prototype.slice.call(arguments).toString());
-  }
 
   function watch(f, fName, args) {
-    raw(f, fName, args.toSource());
+    print(f, fName, args.toSource());
     stack(2);
     $watchList[f][0].apply(this, args);
     $data.scrollTop = $data.scrollHeight;
@@ -265,7 +270,7 @@
 
     '!': function(tmp) {
       tmp.shift();
-      raw(eval(tmp.join(' ')).toSource());
+      print(eval(tmp.join(' ')).toSource());
     },
 
     unwatch: function(tmp) {
@@ -275,7 +280,7 @@
         fName = watchList[wp][1];
 
       eval(fName + ' = ' + fBody);
-      raw('watchpoint ' + wp + ' on ' + fName + ' removed.');
+      print('watchpoint ' + wp + ' on ' + fName + ' removed.');
 
       delete watchList[wp];
     },
@@ -287,7 +292,7 @@
       }
 
       var url = $thirdParty[name[1]] || name[1];
-      raw("Loading " + url + "...");
+      print("Loading " + url + "...");
       var toInject = document.createElement('script');
       toInject.setAttribute('src',url);
       document.body.appendChild(toInject);
@@ -298,12 +303,12 @@
         var flag = false;
 
         for(ix in watchList) {
-          raw('[' + ix + '] ' + watchList[ix][1]);
+          print('[' + ix + '] ' + watchList[ix][1]);
           flag = true;
         }
 
         if(!flag) {
-          raw('No watchpoints set');
+          print('No watchpoints set');
         }
 
         return;
@@ -333,7 +338,7 @@
       
       $watchList[$watchCtr] = Function("", code)();
 
-      raw('watchpoint ' + $watchCtr + ' on ' + wp + ' set.');
+      print('watchpoint ' + $watchCtr + ' on ' + wp + ' set.');
     },
 
     search: function(tmp) {
@@ -366,7 +371,7 @@
                val.toString().search(term) > -1) {
 
               foundCount++;
-              raw(stack.join('.') + '.' + e + ': ' + eObj[e].toString().substr(0,30));
+              print(stack.join('.') + '.' + e + ': ' + eObj[e].toString().substr(0,30));
             } else if(type == 'object') {
               stack.push(e);
               recurse(eObj[e]);
@@ -382,7 +387,7 @@
       recurse(self[base]);
 
       if(!foundCount) {
-        raw(term + ' not found in ' + base);
+        print(term + ' not found in ' + base);
       }
     },
           
@@ -394,14 +399,11 @@
       }
 
       d.sort();
-      raw(d.join('<br>'));
+      print(d.join('<br>'));
     }
   };
 
   function walk(eObj, noemit, hitIn) {
-    if(!$input) {
-      return;
-    }
     var 
       tmp,
       o = {
@@ -421,21 +423,20 @@
       hit = hitIn || {},
       type,
       cat,
+      thirdparam,
       el,
       base = $input.value,
       emit;
 
-    if(eObj instanceof Array) {
-      len = eObj.length;
-
-      for(ix = 0; ix < len; ix++) {
-        el = eObj[ix];
-        o.push(el.toSource());
-      }
-    } else if(typeof eObj == 'string') {
+    if(_.isArr(eObj)) {
+      each(eObj, function(which) {
+        // type coersion to stringify things
+        o.push('' + which);
+      });
+    } else if(_.isStr(eObj)) {
       return o;
     } else {
-      for(e in eObj) {
+      for(var e in eObj) {
         if(hit[e]) {
           continue;
         } else {
@@ -465,12 +466,16 @@
             emit = '';
           }
 
-          o[cat].push(open('span') + '<a onclick=self._Shell.extend("' + base + '",this' + (
-              (tmp == 'function') ?
-                ',"function"' :
-                ''
-              ) +
-            ')>' + e + '</a> ' + emit + '</span>');
+
+          thirdparam = (tmp == 'function') ? ',"function"' : '';
+
+          o[cat].push(
+            open('span') +
+            '<a' +
+              ' style=' + [ 'color:blue', 'cursor:pointer', 'cursor:hand' ].join(';') +
+              ' onclick=self._Shell.extend("' + base + '",this' + thirdparam + ')' +
+             '>' + e + '</a> ' + emit + '</span>'
+          );
         } catch(ex) {
           o[cat].push(open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
         }
@@ -495,7 +500,7 @@
       var fillers = {Values:'<br>', Objects:'', Functions:''};
       for(cat in fillers) {
         if(o[cat].length) {
-          raw(open('h3') + cat + '</h3>' +
+          print(open('h3') + cat + '</h3>' +
             o[cat].sort().join(fillers[cat])
           );
         }
@@ -514,41 +519,11 @@
     tabComplete();
   }
 
-  function extend(base,el,type) {
-    if(!el) {
-      $input.value = base;
-
-      $input.selectionStart = 
-        $input.selectionEnd = 
-        $input.value.length;
-      return;
-    } 
-
-    // we take the base value, add a nominal period, then
-    // search and replace to remove excess then 1 period,
-    // if necessary
-    var ap = '',
-        combined = [base, el.innerHTML].join('.').replace(/\.+/g, '.');
-
-    if(type == 'function') {
-      ap = '()';
-    }
-
-    $input.value = (combined + ap).replace(/^\./, '');
-
-    if(!ap.length) {
-      tabComplete();
-    }
-
-    $input.selectionStart = base.length;
-    $input.selectionEnd = $input.value.length;
-  }
-
 
   function flash(){
     var inv= {
-      background: 'black !important',
-      color: 'white !important'
+      background: 'black',
+      color: 'white'
     };
 
     css($data, inv);
@@ -586,17 +561,17 @@
         $._ = (new Function("", "return " + tmp.join(' ')))();
 
         if($._ !== null) {
-          raw(element('a', {
+          print(element('a', {
             onclick: function() {
-              extend(tmp.join(' ').replace(/;$/,''))
+              _Shell.extend(tmp.join(' ').replace(/;$/,''))
             },
             innerHTML: $._.toString()
           }));
         } else {
-          raw('(null)');
+          print('(null)');
         }
       } catch(ex) {
-        raw(tmp.join(' ') + ': ' + ex.message);
+        print(tmp.join(' ') + ': ' + ex.message);
       }
     }
 
@@ -605,23 +580,26 @@
 
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
-    var 
-      len = Math.min(str1.length, str2.length),
-      ix;
+    for(var 
+          ix = 0, 
+          len = Math.min(str1.length, str2.length); 
 
-    for(ix = 0; ix < len; ix++) {
-      if(str1.charAt(ix) != str2.charAt(ix)) {
-        break;
-      }
-    }
+        ( str1.charAt(ix) == str2.charAt(ix) 
+          && ix < len
+        );
+
+        ix++
+       );
 
     return str1.substr(0, ix);
   }
 
   function tabComplete(){
     var 
-      input = $input, 
-      toSend = input.value.replace(/\.$/g,''),
+      toWalk,
+      tmp,
+      // dump the trailing . if relevant for now
+      toSend = $input.value.replace(/\.$/g,''),
       maxPrefix = false;
 
     if(toSend.length == 0) {
@@ -629,23 +607,22 @@
     }
 
     try {
+      // This is for the case of "n = 1" or whatever
       eval(toSend);
-
-      var 
-        toWalk = Function("", "return " + toSend)(),
-        tmp = input.value;
+      toWalk = runcode(toSend);
 
       if(typeof toWalk == 'undefined') {
         throw(0);
-      } else {
-        raw(toSend);
-        walk(toWalk);
+      } 
 
-        // add a . if necessary for the next level heirarchy
-        if(typeof toWalk == 'object') {
-          if(tmp.charAt(tmp.length - 1) != '.') {
-            input.value = tmp + '.';
-          }
+      print(toSend);
+      walk(toWalk);
+
+      // add a . if necessary for the next level heirarchy
+      if(_.isObj(toWalk)) {
+        tmp = $input.value;
+        if(tmp.charAt(tmp.length - 1) != '.') {
+          $input.value = tmp + '.';
         }
       }
     } catch(ex) {
@@ -665,8 +642,8 @@
         base = 'self';
       }
 
-      try{
-        base = Function("", "return " + base)();
+      try {
+        base = runcode(base);
       } catch(ex){
         print('Failed to expand: ', baseOrig);
       }
@@ -696,22 +673,35 @@
         }
       }
 
+      // we replace the invocation style with the more lenient
+      // parenthesized version with quotations
       if(baseStr.length) {
         last = '["' + last + '"]';
       }
 
-      if(o.length == 1) {
+      // if there are no possible completions,
+      if(o.length == 0) {
+        // flash the screen to indicate an error
+        flash();
+      
+        // otherwise, if there is only only one possible completion
+      } else if(o.length == 1) {
+        // and if that type of completion is an object
         if (lastType == 'object') {
+          // append a dot to it
           post = '.';
         }
 
-        input.value = baseStr + last + post;
+        // and put it in the input
+        $input.value = baseStr + last + post;
 
-      } else if(o.length > 0){
-        input.value = baseStr + maxPrefix;
-        raw(o, 'br');
+        // finally, if there are many possible completions
       } else {
-        flash();
+        // show all of them
+        print(o, 'br');
+
+        // and find the least common prefix among them
+        $input.value = baseStr + maxPrefix;
       }
     }
 
@@ -741,8 +731,8 @@
     });
 
     $data = css(element('div'), {
-      height: '400px',
-      'overflow-Y': 'scroll',
+      'maxHeight': '300px',
+      'overflowY': 'scroll',
       width: '100%' 
     });
 
@@ -789,8 +779,40 @@
         enter(this);
       }
     }, true);
+
+    $input.focus();
   }
 
+  _Shell.extend = function(base, el, type) {
+    if(!el) {
+      $input.value = base;
+
+      $input.selectionStart = 
+        $input.selectionEnd = 
+        $input.value.length;
+      return;
+    } 
+
+    // we take the base value, add a nominal period, then
+    // search and replace to remove excess then 1 period,
+    // if necessary
+    var 
+      ap = '',
+      combined = [base, el.innerHTML].join('.').replace(/\.+/g, '.');
+
+    if(type == 'function') {
+      ap = '()';
+    }
+
+    $input.value = (combined + ap).replace(/^\./, '');
+
+    if(!ap.length) {
+      tabComplete();
+    }
+
+    $input.selectionStart = base.length;
+    $input.selectionEnd = $input.value.length;
+  }
 
   self._Shell = _Shell;
 })();
