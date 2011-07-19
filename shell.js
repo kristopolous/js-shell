@@ -105,7 +105,7 @@
     return element;
   }
 
-  function open(obj) {
+  function _open(obj) {
     return '<' + obj + ' ' + style(obj) + '>';
   }
   function style(obj) {
@@ -470,14 +470,14 @@
           thirdparam = (tmp == 'function') ? ',"function"' : '';
 
           o[cat].push(
-            open('span') +
+            _open('span') +
             '<a' +
               ' style=' + [ 'color:blue', 'cursor:pointer', 'cursor:hand' ].join(';') +
               ' onclick=self._Shell.extend("' + base + '",this' + thirdparam + ')' +
              '>' + e + '</a> ' + emit + '</span>'
           );
         } catch(ex) {
-          o[cat].push(open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
+          o[cat].push(_open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
         }
       }
 
@@ -500,7 +500,7 @@
       var fillers = {Values:'<br>', Objects:'', Functions:''};
       for(cat in fillers) {
         if(o[cat].length) {
-          print(open('h3') + cat + '</h3>' +
+          print(_open('h3') + cat + '</h3>' +
             o[cat].sort().join(fillers[cat])
           );
         }
