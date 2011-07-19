@@ -108,6 +108,7 @@
   function _open(obj) {
     return '<' + obj + ' ' + style(obj) + '>';
   }
+
   function style(obj) {
     return "style='" + styleSheet[obj] + "'";
   }
