@@ -1,18 +1,31 @@
-self.Shell = (function(){
+(function(){
   var
+    // prototypes and short cuts
+    slice = Array.prototype.slice,  
+    toString = Object.prototype.toString,
     styleSheet = {
       h3: 'margin:0;font-size:16px;font-weight:normal;margin-top:8px',
       span: 'display:inline-block;min-width:250px;margin-left:5px'
     },
     func,
-    pub,
-    container,
-    buffer = [],
+    $buffer = [],
+    $elCache = {ctr:0},
     $input,
     $watchCtr = 0,
-    $history = [],
-    $_,
     $watchList = [],
+    $data,
+    $history = {
+      data: [],
+      ptr: 0
+    },
+    $ = {
+      scroll: true,
+      cache: $elCache,
+      history: $history
+    },
+    _Shell = {
+      $: $
+    },
 
     $thirdParty = {
       underscore: 'https://raw.github.com/documentcloud/underscore/master/underscore-min.js',
@@ -23,27 +36,29 @@ self.Shell = (function(){
       mootools: 'http://mootools.net/download/get/mootools-core-1.3.2-full-compat-yc.js'
     },
 
-    // cache of elements
-    elCache = {ctr:0},
-    history = {
-      data: [],
-      ptr: 0
-    },
     tabList = {},
-    data,
     active = false,
-    noTime = false,
-    epoch = new Date(),
     addEvent = window.attachEvent ? 'attachEvent' : 'addEventListener',
     outCount = 0;
 
   var _ = {
+    // from underscore.js {
+    isFun: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
+    isStr: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
     isArr: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
+    isDom: function(obj) { return obj.nodeName },
+    // } end underscore.js
+    // from jquery 1.5.2's type
+    isObj: function( obj ){
+      return obj == null ? 
+        String( obj ) == 'object' : 
+        toString.call(obj) === '[object Object]' || true ;
+    }
   };
 
-  // each from db.js
   var each = Array.prototype.forEach ?
     function (obj, cb) {
+      console.log(obj, cb, obj.forEach);
       if (_.isArr(obj)) { 
         obj.forEach(cb);
       } else {
@@ -75,13 +90,16 @@ self.Shell = (function(){
     for(var key in obj) {
       dom.style[key] = obj[key];
     }
+    return dom;
   }
 
   function element(type, propMap) {
     var element = document.createElement(type);
 
-    for(var prop in propMap) {
-      element[prop] = propMap[prop];
+    if(propMap) {
+      for(var prop in propMap) {
+        element[prop] = propMap[prop];
+      }
     }
 
     return element;
@@ -94,11 +112,6 @@ self.Shell = (function(){
     return "style='" + styleSheet[obj] + "'";
   }
 
-  function getTime(){
-    var d = new Date();
-    return ((d.getTime() - epoch.getTime()) / 1000).toFixed(3);
-  }
-
   function print() {
     var
       argsList = Array.prototype.slice.call(arguments),
@@ -107,54 +120,52 @@ self.Shell = (function(){
       ix;
 
     if(typeof(argsList[0]) == 'object') {
-      for(ix = 0; ix < argsList.length; ix++) {
-        if(typeof(argsList[ix]) == 'object') {
+      each(argList, function(which) {
+        if(_.isDom(which)) {
+          $data.appendChild(which);
+        } else if(_.isObj(which)) {
           // we dump the object in an object cache
           // so we can still have things that are encapsulated
           // but we can analyze them in the debugger.
-          elCache.ctr ++;
-          elCache[elCache.ctr] = argsList[ix];
+          $elCache.ctr ++;
+          $elCache[$elCache.ctr] = argsList[ix];
 
           // we do a reference breadcrumb to the screen
           raw(element('a', {
             onclick: function(){
-              extend("",this)
+              extend("",this);
             },
-            innerHTML: '_.cache[' + elCache.ctr + ']'
-          });
+            'innerHTML': 'self._Shell.$.cache[' + $elCache.ctr + ']'
+          }));
 
-          walk(argsList[ix]);
+          walk(which);
         } else {
-          data.append('<br>' + argsList[ix]);
+          $data.appendChild(element('<br>'))
+          $data.appendChild(argsList[ix]);
         }
-      }
+      });
     } else {
-      if(!noTime) {
-        output += getTime();
-        output += "[" + args.toString() + "]";
-      } else {
-        output += args.toString();
-      }
+      output += args.toString();
 
-      if(data) {
-        data.innerHTML += "<br>" + output;
+      if($data) {
+        $data.innerHTML += "<br>" + output;
       } else {
-        buffer.push("<br>" + output);
+        $buffer.push("<br>" + output);
       }
     }
 
     outCount++;
 
     if(outCount % 500 == 0) {
-      var par = data.parentNode;
-      data = par.removeChild(data);
-      var last = data.childNodes.length / 2;
+      var par = $data.parentNode;
+      $data = par.removeChild($data);
+      var last = $data.childNodes.length / 2;
 
       for(ix = 0; ix < last; ix++) {
-        data.removeChild(data.firstChild);
+        $data.removeChild($data.firstChild);
       }
 
-      data = par.insertBefore(data, par.lastChild);
+      $data = par.insertBefore($data, par.lastChild);
     }
     if(pub.scroll) {
       $data.scrollTop = $data.scrollHeight;
@@ -162,17 +173,8 @@ self.Shell = (function(){
 
   }
   
-  _.scroll = true;
-  // After declaration, we create a backreference
-  // to the cache to expose it
-  _.cache = elCache;
-  _.history = history;
-
 
   function pre(){
-    var old = noTime;
-    noTime = true;
-
     print([
       '<pre>', 
       Array.prototype.slice.call(arguments)
@@ -180,8 +182,6 @@ self.Shell = (function(){
         .replace(/</g, '&lt;') 
         .replace(/>/g, '&gt;'),
       '</pre>'].join(''));
-
-    noTime = old;
   }
 
 
@@ -230,10 +230,7 @@ self.Shell = (function(){
   }
 
   function raw(){
-    var old = noTime;
-    noTime = true;
     print(Array.prototype.slice.call(arguments).toString());
-    noTime = old;
   }
 
   function watch(f, fName, args) {
@@ -329,7 +326,7 @@ self.Shell = (function(){
       code = [
         'var ret = [' + wp + ', "' + wp + '"];',
         wp + ' = function() {',
-          'return Gdb.watch(' + watchArgs + ');',
+          'return self._Shell.watch(' + watchArgs + ');',
         '};',
         'return ret;'
       ].join('\n');
@@ -468,7 +465,7 @@ self.Shell = (function(){
             emit = '';
           }
 
-          o[cat].push(open('span') + '<a onclick=Gdb.extend("' + base + '",this' + (
+          o[cat].push(open('span') + '<a onclick=self._Shell.extend("' + base + '",this' + (
               (tmp == 'function') ?
                 ',"function"' :
                 ''
@@ -586,14 +583,14 @@ self.Shell = (function(){
       $cmd[tmp[0]](tmp);
     } else {
       try {
-        $_ = (new Function("", "return " + tmp.join(' ')))();
+        $._ = (new Function("", "return " + tmp.join(' ')))();
 
-        if($_ !== null) {
+        if($._ !== null) {
           raw(element('a', {
             onclick: function() {
               extend(tmp.join(' ').replace(/;$/,''))
             },
-            innerHTML: $_.toString()
+            innerHTML: $._.toString()
           }));
         } else {
           raw('(null)');
@@ -684,7 +681,7 @@ self.Shell = (function(){
 
           lastType = typeof(base[ix]);
 
-          each([
+          o.push([
             '&nbsp;',
             element('a', {
               onclick: function(){
@@ -693,7 +690,7 @@ self.Shell = (function(){
               innerHTML: ix
             }),
             '(' + lastType + ')'
-          ], o.push);
+          ])
 
           last = ix;
         }
@@ -712,7 +709,7 @@ self.Shell = (function(){
 
       } else if(o.length > 0){
         input.value = baseStr + maxPrefix;
-        raw(o.join('<br>'));
+        raw(o, 'br');
       } else {
         flash();
       }
@@ -723,83 +720,71 @@ self.Shell = (function(){
     $input.focus();
   }
 
-  var pub = function(dom) {
-    if(container) {
-      return;
-    }
+  _Shell.init = function(dom) {
+    dom = dom || document.body;
 
-    history.data = [];
-    history.ptr = history.data.length;
+    var container = css(element('div'), {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      display: 'block',
+      width: '100%',
+      background: '#d4d8d3',
+      color: '#000',
+      fontFamily: 'monospace, monospace',
+      padding: '4px'
+    });
 
-    dbg = document.getElementById('dbg');
+    $input = css(element('input'), {
+      border: '0',
+      width: '100%' 
+    });
 
-    if(dbg) {
-      pub.container = container = dbg;
-      $input = document.getElementsByTagName('input')[0];
-      data = dbg.firstChild;
-    } else {
-      pub.container = container = document.createElement('div');
-      css(container, {
-        color: '#000',
-        fontFamily: 'monospace, monospace',
-        padding: '4px'
-      });
+    $data = css(element('div'), {
+      height: '400px',
+      'overflow-Y': 'scroll',
+      width: '100%' 
+    });
 
-      container.setAttribute('id', 'dbg');
-      container.id = 'dbg';
+    container.appendChild($data);
+    container.appendChild($input);
 
-      $input = document.createElement('input');
-      css($input, {
-        border: '0',
-        width: '100%' 
-      });
+    dom.appendChild(container);
 
-      data = document.createElement('div');
-      css(data, {
-        height: '800px',
-        'overflow-Y': 'scroll',
-        width: '100%' 
-      });
-
-      container.appendChild(data);
-      container.appendChild($input);
-
-      dom.appendChild(container);
-    }
-
-    data[addEvent]('mouseup', function(){
+    $data[addEvent]('mouseup', function(){
       $input.focus();
     }, true);
 
-    data.innerHTML += buffer.join('');
-    buffer = [];
-    _.data = data;
+    $data.innerHTML += $buffer.join('');
+    $buffer = [];
 
     $input[addEvent]('keydown', function(e) {
-      var kc;
+      var kc = window.event ? window.event.keyCode : e.which;
 
-      if (window.event) kc = window.event.keyCode;
-      else if (e) kc = e.which;
-
+      // up
       if(kc == 38) {
-        if(history.ptr > 0) {
-          history.ptr --;
-          $input.value = history.data[history.ptr];
+        if($history.ptr > 0) {
+          $history.ptr --;
+          $input.value = $history.data[$history.ptr];
         } else {
           flash();
         }
+      // down
       } else if(kc == 40) {
-        if(history.ptr < (history.data.length - 1)) {
-          history.ptr ++;
-          $input.value = history.data[history.ptr];
+        if($history.ptr < ($history.data.length - 1)) {
+          $history.ptr ++;
+          $input.value = $history.data[$history.ptr];
         } else {
-          history.ptr = history.data.length;
+          $history.ptr = $history.data.length;
           $input.value = "";
         }
+      // tab
       } else if(kc == 9) {
         e.preventDefault();
         e.stopPropagation();
+
         tabComplete();
+      // enter
       } else if(kc == 13) {
         enter(this);
       }
@@ -807,5 +792,7 @@ self.Shell = (function(){
   }
 
 
-  return pub;
+  self._Shell = _Shell;
 })();
+
+_Shell.init();
