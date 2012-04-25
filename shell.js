@@ -98,6 +98,13 @@
 
     if(propMap) {
       for(var prop in propMap) {
+
+        if(prop == "attrib") {
+          for(var attrib in propMap.attrib) {
+            element.setAttribute(attrib, propMap.attrib[attrib]);
+          }
+        }
+
         element[prop] = propMap[prop];
       }
     }
@@ -125,7 +132,7 @@
       ix;
 
     if(typeof(argsList[0]) == 'object') {
-      each(argList, function(which) {
+      each(argsList, function(which) {
         if(_.isDom(which)) {
           $data.appendChild(which);
         } else if(_.isObj(which)) {
@@ -259,7 +266,7 @@
           _stack.shift();
         }
       }
-      pre(_stack.join('\n').replace(/\([^\)]*./g, ''));
+      print.pre(_stack.join('\n').replace(/\([^\)]*./g, ''));
     }
   }
 
@@ -489,7 +496,6 @@
             o[cat] = Array.concat(o[cat], toMerge[cat]);
           }
         } catch(ex) {
-          
         }
       }
     }
@@ -539,7 +545,10 @@
     $history.data.push(el.value);
     $history.ptr = $history.data.length;  
 
-    tmp = el.value;
+    var 
+      tmp = el.value,
+      original = el.value;
+
     el.value = "";
 
     // !! is the last command, like the shell
@@ -561,12 +570,21 @@
         $._ = (new Function("", "return " + tmp.join(' ')))();
 
         if($._ !== null) {
-          print(element('a', {
-            onclick: function() {
-              _Shell.extend(tmp.join(' ').replace(/;$/,''))
-            },
-            innerHTML: $._.toString()
-          }));
+          
+          var 
+            div = element('div'),
+            output = div.appendChild(element('a', {
+              onclick: function() {
+                _Shell.extend(tmp.join(' ').replace(/;$/,''))
+              },
+              attrib: {
+                title: original,
+                onmouseenter: 'with(this.style){textDecoration="underline";cursor="pointer"}',
+                onmouseleave: 'with(this.style){textDecoration="none";cursor="default"}'
+              },
+              innerHTML: $._.toString()
+            }));
+          print(div);
         } else {
           print('(null)');
         }
@@ -675,8 +693,10 @@
 
       // we replace the invocation style with the more lenient
       // parenthesized version with quotations
-      if(baseStr.length) {
+      if(baseStr.length && baseStr.search(/[-\ ]/) > -1) {
         last = '["' + last + '"]';
+      } else {
+        last = '.' + last;
       }
 
       // if there are no possible completions,
