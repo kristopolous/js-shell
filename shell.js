@@ -738,6 +738,7 @@
       }
     }
 
+    // This will scroll the window down.
     $data.scrollTop = $data.scrollHeight;
 
     $input.focus();
@@ -783,7 +784,6 @@
 
     $input[addEvent_](keyDown_, function(e) {
       var kc = window.event ? window.event.keyCode : e.which;
-      console.log(kc);
 
       // up
       if(kc == 38) {
@@ -804,15 +804,25 @@
         }
       // tab
       } else if(kc == 9) {
+        // IE doesn't have prevent/stop so
+        // we have to test for it.
         e.preventDefault && e.preventDefault();
         e.stopPropagation && e.stopPropagation();
 
         tabComplete();
+
+        // This is how IE stops prop, if this wasn't here
+        // things would go off to the address bar.
         return false;
+
       // enter
       } else if(kc == 13) {
-        enter(this);
+        // The this pointer freaks out IE, so
+        // we just use the object we have from above.
+        enter($input);
       }
+    // This last argument is needed for addEventListener (non-ie)
+    // and is ignored for attachEvent (IE)
     }, true);
 
     $input.focus();
