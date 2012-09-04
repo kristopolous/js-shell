@@ -4,8 +4,10 @@
     slice = Array.prototype.slice,  
     toString = Object.prototype.toString,
     styleSheet = {
-      h3: 'margin:0;font-size:16px;font-weight:normal;margin-top:8px',
-      span: 'display:inline-block;min-width:250px;margin-left:5px'
+      h3: 'margin:0;font-size:1.25em;font-weight:normal;margin-top:8px;color:#000',
+      span: 'font-size:0.8em;display:inline-block;width:250px;min-width:250px;margin-left:5px',
+      // not a div thanks to ie.
+      b: 'font-size:0.8em;font-weight:normal;display:inline-block;width:400px;min-width:400px;margin-left:5px'
     },
     func,
     $buffer = [],
@@ -31,7 +33,7 @@
       underscore: 'https://raw.github.com/documentcloud/underscore/master/underscore-min.js',
       backbone: 'https://raw.github.com/documentcloud/backbone/master/backbone.js',
       mustache: 'https://raw.github.com/janl/mustache.js/master/mustache.js',
-      jquery: 'http://code.jquery.com/jquery-1.6.2.min.js',
+      jquery: 'http://code.jquery.com/jquery-1.8.1.min.js',
       db: 'https://raw.github.com/kristopolous/db.js/master/db.min.js',
       mootools: 'http://mootools.net/download/get/mootools-core-1.3.2-full-compat-yc.js'
     },
@@ -39,7 +41,8 @@
     counters = {},
     tabList = {},
     active = false,
-    addEvent = window.attachEvent ? 'attachEvent' : 'addEventListener',
+    addEvent_ = window.attachEvent ? 'attachEvent' : 'addEventListener',
+    keyDown_ = window.attachEvent ? 'onkeydown' : 'keydown',
     outCount = 0;
 
   var _ = {
@@ -431,6 +434,7 @@
       type,
       cat,
       thirdparam,
+      container,
       el,
       base = $input.value,
       emit;
@@ -476,12 +480,21 @@
 
           thirdparam = (tmp == 'function') ? ',"function"' : '';
 
+          // Things are broken up by category to be displayed.
+          // But here they are aggregated across the board.
+
+          if(cat == 'Values') {
+            container = 'b';
+          } else {
+            container = 'span';
+          }
+
           o[cat].push(
-            _open('span') +
+            _open(container) +
             '<a' +
               ' style=' + [ 'color:blue', 'cursor:pointer', 'cursor:hand' ].join(';') +
               ' onclick=self._Shell.extend("' + base + '",this' + thirdparam + ')' +
-             '>' + e + '</a> ' + emit + '</span>'
+             '>' + e + '</a> ' + emit + '</' + container + '>'
           );
         } catch(ex) {
           o[cat].push(_open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
@@ -503,7 +516,7 @@
     if(noemit) {
       return o;
     } else {
-      var fillers = {Values:'<br>', Objects:'', Functions:''};
+      var fillers = {Values:'', Objects:'', Functions:''};
       for(cat in fillers) {
         if(o[cat].length) {
           print(_open('h3') + cat + '</h3>' +
@@ -761,15 +774,16 @@
 
     dom.appendChild(container);
 
-    $data[addEvent]('mouseup', function(){
+    $data[addEvent_]('mouseup', function(){
       $input.focus();
     }, true);
 
     $data.innerHTML += $buffer.join('');
     $buffer = [];
 
-    $input[addEvent]('keydown', function(e) {
+    $input[addEvent_](keyDown_, function(e) {
       var kc = window.event ? window.event.keyCode : e.which;
+      console.log(kc);
 
       // up
       if(kc == 38) {
@@ -790,10 +804,11 @@
         }
       // tab
       } else if(kc == 9) {
-        e.preventDefault();
-        e.stopPropagation();
+        e.preventDefault && e.preventDefault();
+        e.stopPropagation && e.stopPropagation();
 
         tabComplete();
+        return false;
       // enter
       } else if(kc == 13) {
         enter(this);
