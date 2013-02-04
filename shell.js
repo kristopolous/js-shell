@@ -45,12 +45,23 @@
     keyDown_ = window.attachEvent ? 'onkeydown' : 'keydown',
     outCount = 0;
 
+  if (!Object.getOwnPropertyNames) {
+    console.log("get a better browser faggot");
+  }
+
   var _ = {
     // from underscore.js {
     isFun: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
     isStr: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
     isArr: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
     isDom: function(obj) { return obj.nodeName },
+    uniq: function(obj) {
+      var check = {};
+      each(obj, function(which) {
+        check[which] = 1;
+      });
+      return Object.keys(check);
+    },
     // } end underscore.js
     // from jquery 1.5.2's type
     isObj: function( obj ){
@@ -609,6 +620,13 @@
     $data.scrollTop = $data.scrollHeight;
   }
 
+  function getMembers(obj) {
+    return _.uniq([].concat(
+      Object.keys(obj),
+      Object.getOwnPropertyNames(obj)
+    ).sort());
+  }
+
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
     for(var 
@@ -679,7 +697,8 @@
         print('Failed to expand: ', baseOrig);
       }
 
-      for(var ix in base) {
+
+      each(getMembers(base), function(ix) {
         if(ix.toLowerCase().indexOf(needle) ==  0) {
           if(!maxPrefix) {
             maxPrefix = ix;
@@ -702,7 +721,7 @@
 
           last = ix;
         }
-      }
+      });
 
       // we replace the invocation style with the more lenient
       // parenthesized version with quotations
