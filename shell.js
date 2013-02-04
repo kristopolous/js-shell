@@ -615,10 +615,6 @@
       ['callee', 'caller', 'arguments']
     ).sort();
   }
-  /*
-  self.getMembers = getMembers;
-  self._ = _;
-  */
 
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
@@ -755,6 +751,10 @@
 
     $input.focus();
   }
+
+  
+  _Shell.getMembers = getMembers;
+  _Shell._ = _;
 
   _Shell.init = function(dom) {
     dom = dom || document.body;
