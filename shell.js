@@ -449,6 +449,9 @@
 
         try {
           type = _.getType( eObj[e] );
+        } catch(ex) { type = 'null' } 
+
+        try {
           tmp = type;
           cat = map[type];
 
