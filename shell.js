@@ -583,13 +583,12 @@
     } else {
       try {
         console.log("return " + tmp.join(' '));
-        $._ = (new Function("", "return " + tmp.join(' ')))();
         var div = element('div');
 
         div.appendChild(css(
           element('a', { onclick: function() { _Shell.extend(tmp.join(' ').replace(/;$/,'')) },
           attrib: { title: original },
-          innerHTML: $._.toString()
+          innerHTML: [_.getType($._), toString.call($._)].join(' ')
         })), {cursor: "pointer" });
 
         print(div);
