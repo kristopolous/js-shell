@@ -478,6 +478,10 @@
           // Things are broken up by category to be displayed.
           // But here they are aggregated across the board.
 
+          if(!(cat in o)) {
+            cat = 'Values';
+          }
+
           if(cat == 'Values') {
             container = 'b';
           } else {
