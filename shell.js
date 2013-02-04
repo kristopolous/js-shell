@@ -50,11 +50,18 @@
   }
 
   var _ = {
-    // from underscore.js {
-    isFun: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
-    isStr: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
-    isArr: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
-    isDom: function(obj) { return obj.nodeName },
+    getType: function(obj) {
+      if(obj == null ) {
+        return 'null';
+      }
+      var type;
+      each("Function Boolean Number String Array Dom Object".split(" "), function(what) {
+        if(!type && _['is' + what](obj)) {
+          type = what.toLowerCase();
+        }
+      });
+      return type;
+    },
     uniq: function(obj) {
       var check = {};
       each(obj, function(which) {
@@ -62,9 +69,16 @@
       });
       return Object.keys(check);
     },
+    // from underscore.js {
+    isFunction: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
+    isBoolean: function(obj) { return obj === true || obj === false || toString.call(obj) == '[object Boolean]'; },
+    isString: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
+    isNumber: function(obj) { return toString.call(obj) === '[object Number]' },
+    isArray: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
+    isDom: function(obj) { return obj.nodeName },
     // } end underscore.js
     // from jquery 1.5.2's type
-    isObj: function( obj ){
+    isObject: function( obj ){
       return obj == null ? 
         String( obj ) == 'object' : 
         toString.call(obj) === '[object Object]' || true ;
@@ -73,7 +87,7 @@
 
   var each = Array.prototype.forEach ?
     function (obj, cb) {
-      if (_.isArr(obj)) { 
+      if (_.isArray(obj)) { 
         obj.forEach(cb);
       } else {
         for( var key in obj ) {
@@ -83,7 +97,7 @@
     } :
 
     function (obj, cb) {
-      if (_.isArr(obj)) {
+      if (_.isArray(obj)) {
         for ( var i = 0, len = obj.length; i < len; i++ ) { 
           cb(obj[i], i);
         }
@@ -149,7 +163,7 @@
       each(argsList, function(which) {
         if(_.isDom(which)) {
           $data.appendChild(which);
-        } else if(_.isObj(which)) {
+        } else if(_.isObject(which)) {
           // we dump the object in an object cache
           // so we can still have things that are encapsulated
           // but we can analyze them in the debugger.
@@ -385,15 +399,14 @@
 
         for(var e in eObj) {
           if(eObj.hasOwnProperty(e)) {
-            type = typeof eObj[e];
             val = eObj[e];
 
-            if(((type == 'number') || (type == 'string')) && 
+            if((_.isNumber(eObj[e]) || _.isString(eObj[e])) && 
                val.toString().search(term) > -1) {
 
               foundCount++;
               print(stack.join('.') + '.' + e + ': ' + eObj[e].toString().substr(0,30));
-            } else if(type == 'object') {
+            } else if(_.isObject(eObj[e])) {
               stack.push(e);
               recurse(eObj[e]);
               stack.pop();
@@ -433,6 +446,8 @@
         'Values':[]
       },
       map = {
+        'null': 'Values',
+        'dom': 'Objects',
         'object' : 'Objects',
         'function' : 'Functions',
         'boolean' : 'Values',
@@ -450,12 +465,12 @@
       base = $input.value,
       emit;
 
-    if(_.isArr(eObj)) {
+    if(_.isArray(eObj)) {
       each(eObj, function(which) {
         // type coersion to stringify things
         o.Objects.push('' + which);
       });
-    } else if(_.isStr(eObj)) {
+    } else if(_.isString(eObj)) {
       console.log(eObj + "it's a string");
       return o;
     } else {
@@ -467,7 +482,7 @@
         }
 
         try {
-          type = typeof eObj[e];
+          type = _.getType( eObj[e] );
           tmp = type;
           cat = map[type];
 
@@ -625,7 +640,7 @@
 
   function getMembers(obj) {
     var ret = [];
-    while(!_.isStr(obj) && _.isObj(obj) && obj) {
+    while(!_.isString(obj) && _.isObject(obj) && obj) {
      console.log(obj);
      ret = ret.concat( Object.getOwnPropertyNames(obj) );
      obj = Object.getPrototypeOf(obj);
@@ -675,7 +690,7 @@
       walk(toWalk);
 
       // add a . if necessary for the next level heirarchy
-      if(_.isObj(toWalk)) {
+      if(_.isObject(toWalk)) {
         tmp = $input.value;
         if(tmp.charAt(tmp.length - 1) != '.') {
           $input.value = tmp + '.';
@@ -713,7 +728,7 @@
             maxPrefix = prefixCheck(maxPrefix, ix);
           }
 
-          lastType = typeof(base[ix]);
+          lastType = _.getType(base[ix]);
 
           o.push([
             '&nbsp;',
