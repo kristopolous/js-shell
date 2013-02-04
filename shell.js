@@ -626,7 +626,8 @@
   function getMembers(obj) {
     var ret = [];
     while(!_.isStr(obj) && _.isObj(obj) && obj) {
-     ret = ret.concat( Object.keys(obj), Object.getOwnPropertyNames(obj) );
+     console.log(obj);
+     ret = ret.concat( Object.getOwnPropertyNames(obj) );
      obj = Object.getPrototypeOf(obj);
     } 
     return _.uniq(ret).sort();
