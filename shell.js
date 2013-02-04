@@ -647,6 +647,18 @@
     $data.scrollTop = $data.scrollHeight;
   }
 
+  function diff(one, two) {
+    var comp = {};
+    each(one, function(i) { comp[i] = 1; 
+    });
+    each(two, function(i) { 
+      if(comp[i] === 1) {
+        delete comp[i];
+      }
+    });
+    return Object.keys(comp);
+  }
+
   function getMembers(obj) {
     var ret = [];
     while(!_.isString(obj) && _.isObject(obj) && obj) {
@@ -654,9 +666,13 @@
      ret = ret.concat( Object.getOwnPropertyNames(obj) );
      obj = Object.getPrototypeOf(obj);
     } 
-    return _.uniq(ret).sort();
+
+    return diff(
+      _.uniq(ret),
+      // Can't iterate over these things in strict mode.
+      ['callee', 'caller', 'arguments']
+    ).sort();
   }
-  self.getMembers = getMembers;
 
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
