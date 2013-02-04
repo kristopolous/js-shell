@@ -1,3 +1,12 @@
+//
+// js-shell : a hackers toolkit that doesn't observe
+// any kind js rules and tries to give you what you need
+// to get shit done.
+//
+// (C) 2008 - 2013, Christopher McKenzie
+//
+// See LICENSE.MIT for more info
+//
 (function(){
   var
     // prototypes and short cuts
