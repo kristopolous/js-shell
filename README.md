@@ -8,6 +8,7 @@ Just a debugging shell ... go here for a demo: http://qaa.ath.cx/js-shell/shell.
 Once in you have 
 
  * history with up/down, ctrl+p/n
+ * searchable object (something like search document append will show you)
  * tab completion 
    * broken down by object type, 
    * alphabetically, 

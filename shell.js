@@ -10,7 +10,7 @@
 (function(){
   var
     // prototypes and short cuts
-    slice = Array.prototype.slice,  
+    Slice = Array.prototype.slice,  
     toString = Object.prototype.toString,
     styleSheet = {
       h3: 'margin:0;font-size:1.25em;font-weight:normal;margin-top:8px;color:#000',
@@ -43,8 +43,7 @@
       backbone: 'https://raw.github.com/documentcloud/backbone/master/backbone.js',
       mustache: 'https://raw.github.com/janl/mustache.js/master/mustache.js',
       jquery: 'http://code.jquery.com/jquery-1.8.1.min.js',
-      db: 'https://raw.github.com/kristopolous/db.js/master/db.min.js',
-      mootools: 'http://mootools.net/download/get/mootools-core-1.3.2-full-compat-yc.js'
+      db: 'https://raw.github.com/kristopolous/db.js/master/db.min.js'
     },
 
     counters = {},
@@ -52,47 +51,53 @@
     active = false,
     addEvent_ = window.attachEvent ? 'attachEvent' : 'addEventListener',
     keyDown_ = window.attachEvent ? 'onkeydown' : 'keydown',
-    outCount = 0;
-
-  if (!Object.getOwnPropertyNames) {
-    console.log("get a better browser faggot");
-  }
-
-  var _ = {
-    getType: function(obj) {
-      if(obj == null ) {
-        return 'null';
-      }
-      var type;
-      each("Function Boolean Number String Array Dom Object".split(" "), function(what) {
-        if(!type && _['is' + what](obj)) {
-          type = what.toLowerCase();
+    outCount = 0,
+    _ = {
+      getType: function(obj) {
+        if(obj == null ) {
+          return 'null';
         }
-      });
-      return type;
-    },
-    uniq: function(obj) {
-      var check = {};
-      each(obj, function(which) {
-        check[which] = 1;
-      });
-      return Object.keys(check);
-    },
-    // from underscore.js {
-    isFunction: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
-    isBoolean: function(obj) { return obj === true || obj === false || toString.call(obj) == '[object Boolean]'; },
-    isString: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
-    isNumber: function(obj) { return toString.call(obj) === '[object Number]' },
-    isArray: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
-    isDom: function(obj) { return obj.nodeName },
-    // } end underscore.js
-    // from jquery 1.5.2's type
-    isObject: function( obj ){
-      return obj == null ? 
-        String( obj ) == 'object' : 
-        toString.call(obj) === '[object Object]' || true ;
-    }
-  };
+        var type;
+        each("Function Boolean Number String Array Dom Object".split(" "), function(what) {
+          if(!type && _['is' + what](obj)) {
+            type = what.toLowerCase();
+          }
+        });
+        return type;
+      },
+      uniq: function(obj) {
+        var check = {};
+        each(obj, function(which) {
+          check[which] = 1;
+        });
+        return Object.keys(check);
+      },
+      // from underscore.js {
+      isFunction: function(obj) { return !!(obj && obj.constructor && obj.call && obj.apply) },
+      isBoolean: function(obj) { return obj === true || obj === false || toString.call(obj) == '[object Boolean]'; },
+      isString: function(obj) { return !!(obj === '' || (obj && obj.charCodeAt && obj.substr)) },
+      isNumber: function(obj) { return toString.call(obj) === '[object Number]' },
+      isArray: Array.prototype.isArray || function(obj) { return toString.call(obj) === '[object Array]' },
+      isDom: function(obj) { return obj.nodeName },
+      // } end underscore.js
+      // from jquery 1.5.2's type
+      isObject: function( obj ){
+        return obj == null ? 
+          String( obj ) == 'object' : 
+          toString.call(obj) === '[object Object]' || true ;
+      }
+    };
+
+  function diff(one, two) {
+    var comp = {};
+    each(one, function(i) { comp[i] = 1; });
+    each(two, function(i) { 
+      if(comp[i] === 1) {
+        delete comp[i];
+      }
+    });
+    return Object.keys(comp);
+  }
 
   var each = Array.prototype.forEach ?
     function (obj, cb) {
@@ -117,16 +122,13 @@
       }
    };
 
+  // These are dom thingies {
   function uncss(dom, obj) {
-    for(var key in obj) {
-      dom.style[key] = 'inherit';
-    }
+    for(var key in obj) { dom.style[key] = 'inherit'; }
   }
 
   function css(dom, obj) {
-    for(var key in obj) {
-      dom.style[key] = obj[key];
-    }
+    for(var key in obj) { dom.style[key] = obj[key]; }
     return dom;
   }
 
@@ -156,6 +158,7 @@
   function style(obj) {
     return "style='" + styleSheet[obj] + "'";
   }
+  // end of dom things.
 
   function runcode(str) {
     return Function("", "return " + str)();
@@ -163,7 +166,7 @@
 
   function print() {
     var
-      argsList = Array.prototype.slice.call(arguments),
+      argsList = Slice.call(arguments),
       args = argsList.toString(),
       output = "",
       ix;
@@ -231,56 +234,12 @@
   print.pre = function(){
     print([
       '<pre>', 
-      Array.prototype.slice.call(arguments)
+      Slice.call(arguments)
         .toString()
         .replace(/</g, '&lt;') 
         .replace(/>/g, '&gt;'),
       '</pre>'].join(''));
   }
-
-  function reset(name){
-    if(name in counters) {
-      counters[name] = 0;
-      print(name + ': (reset)');
-    }
-  }
-
-  function incr(name){
-    if(name in counters) {
-      counters[name]++;
-    } else {
-      counters[name] = 1;
-    }
-
-    print([
-      element('a', {
-        onclick: function(){
-          reset(name)
-        },
-        innerHTML: name
-      }),
-      ': ' + counters[name]
-    ]);
-  }
-
-  function decr(name) {
-    if(name in counters) {
-      counters[name]--;
-    } else {
-      counters[name] = 0;
-    }
-
-    print([
-      element('a', {
-        onclick: function(){
-          reset(name)
-        },
-        innerHTML: name
-      }),
-      ': ' + counters[name]
-    ]);
-  }
-
 
   function watch(f, fName, args) {
     print(f, fName, args.toSource());
@@ -309,7 +268,7 @@
 
   var $cmd = {
     clear: function(){
-      $data.html("");
+      $data.innerHTML = "";
     },
 
     '!': function(tmp) {
@@ -396,8 +355,8 @@
         // prevent recursion
         maxdepth = 4,
         curdepth = 0,
-        val,
-        term = tmp[1];
+        valStr,
+        term = tmp[1].toLowerCase();
 
       function recurse(eObj) {
         curdepth++;
@@ -406,22 +365,27 @@
           return;
         }
 
-        for(var e in eObj) {
-          if(eObj.hasOwnProperty(e)) {
-            val = eObj[e];
+        each(getMembers(eObj), function(key) {
+          val = eObj[key];
+          valStr = toString.call(val);
 
-            if((_.isNumber(eObj[e]) || _.isString(eObj[e])) && 
-               val.toString().search(term) > -1) {
-
-              foundCount++;
-              print(stack.join('.') + '.' + e + ': ' + eObj[e].toString().substr(0,30));
-            } else if(_.isObject(eObj[e])) {
-              stack.push(e);
-              recurse(eObj[e]);
-              stack.pop();
-            }
+          if(key.toLowerCase().search(term) > -1) {
+            foundCount++;
+            print(stack.join('.') + '.' + key );
           }
-        }
+
+          if(valStr.toLowerCase().search(term) > -1) {
+            foundCount++;
+            print(stack.join('.') + '.' + key + ': ' + valStr );
+          }
+
+          if(_.isObject(val)) {
+            stack.push(key);
+            recurse(val);
+            stack.pop();
+          }
+
+        });
 
         curdepth--;
       }
@@ -435,14 +399,7 @@
     },
           
     '?': function(){
-      var d = [];
-
-      for(i in $cmd) {
-        d.push(i);
-      }
-
-      d.sort();
-      print(d.join('<br>'));
+      print(Object.keys(d).sort().join('<br>'));
     }
   };
 
@@ -577,6 +534,7 @@
 
 
   function flash(){
+    console.log("flash");
     var inv= {
       background: 'black',
       color: 'white'
@@ -618,26 +576,15 @@
     } else {
       try {
         $._ = (new Function("", "return " + tmp.join(' ')))();
+        var div = element('div');
 
-        if($._ !== null) {
-          
-          var 
-            div = element('div'),
-            output = div.appendChild(element('a', {
-              onclick: function() {
-                _Shell.extend(tmp.join(' ').replace(/;$/,''))
-              },
-              attrib: {
-                title: original,
-                onmouseenter: 'with(this.style){textDecoration="underline";cursor="pointer"}',
-                onmouseleave: 'with(this.style){textDecoration="none";cursor="default"}'
-              },
-              innerHTML: $._.toString()
-            }));
-          print(div);
-        } else {
-          print('(null)');
-        }
+        div.appendChild(css(
+          element('a', { onclick: function() { _Shell.extend(tmp.join(' ').replace(/;$/,'')) },
+          attrib: { title: original },
+          innerHTML: $._.toString()
+        })), {cursor: "pointer" });
+
+        print(div);
       } catch(ex) {
         console.log(ex);
         print(tmp.join(' ') + ': ' + ex.message);
@@ -647,22 +594,10 @@
     $data.scrollTop = $data.scrollHeight;
   }
 
-  function diff(one, two) {
-    var comp = {};
-    each(one, function(i) { comp[i] = 1; 
-    });
-    each(two, function(i) { 
-      if(comp[i] === 1) {
-        delete comp[i];
-      }
-    });
-    return Object.keys(comp);
-  }
 
   function getMembers(obj) {
     var ret = [];
-    while(!_.isString(obj) && _.isObject(obj) && obj) {
-     console.log(obj);
+    while( ['dom','function','object'].indexOf(_.getType(obj)) > -1) {
      ret = ret.concat( Object.getOwnPropertyNames(obj) );
      obj = Object.getPrototypeOf(obj);
     } 
@@ -673,6 +608,10 @@
       ['callee', 'caller', 'arguments']
     ).sort();
   }
+  /*
+  self.getMembers = getMembers;
+  self._ = _;
+  */
 
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
