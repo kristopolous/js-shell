@@ -605,7 +605,10 @@
   function getMembers(obj) {
     var ret = [];
     while( ['dom','function','object'].indexOf(_.getType(obj)) > -1) {
-     ret = ret.concat( Object.getOwnPropertyNames(obj) );
+     ret = ret.concat( 
+       Object.keys(obj.prototype),
+       Object.getOwnPropertyNames(obj) 
+     );
      obj = Object.getPrototypeOf(obj);
     } 
 
