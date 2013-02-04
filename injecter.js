@@ -21,4 +21,4 @@ document.body.innerHTML += '<script src="https://raw.github.com/kristopolous/js-
       clearInterval(ival);
     }
   }, 100);
-});
+})();
