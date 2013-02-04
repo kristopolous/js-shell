@@ -1,4 +1,13 @@
-// This just loads the shell on to the page.
+// This just loads the shell on to the page. The fancy word for this
+// is AMD ... but let's not be arrogant here.
+//
+// Here's some expected copy-pasta:
+/*
+
+document.body.innerHTML += '<script src="https://raw.github.com/kristopolous/js-shell/master/injecter.js"></script>';
+
+*/
+
 (function(){
   if(!self._Shell) {
     var script = document.body.createElement("script");
