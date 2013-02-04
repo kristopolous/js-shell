@@ -453,14 +453,15 @@
     if(_.isArr(eObj)) {
       each(eObj, function(which) {
         // type coersion to stringify things
-        o.push('' + which);
+        o.Objects.push('' + which);
       });
     } else if(_.isStr(eObj)) {
+      console.log(eObj + "it's a string");
       return o;
     } else {
-      for(var e in eObj) {
+      each(getMembers(eObj), function(e) {
         if(hit[e]) {
-          continue;
+          return;
         } else {
           hit[e] = true;
         }
@@ -479,7 +480,7 @@
           } else if(tmp == 'boolean') {
             emit = eObj[e].toString();
           } else if(tmp == 'function' && eObj == self) {
-            continue;
+            return;
           }
 
           if(emit) {
@@ -487,7 +488,6 @@
           } else {
             emit = '';
           }
-
 
           thirdparam = (tmp == 'function') ? ',"function"' : '';
 
@@ -508,9 +508,10 @@
              '>' + e + '</a> ' + emit + '</' + container + '>'
           );
         } catch(ex) {
+          console.log(ex);
           o[cat].push(_open('span') + e + ' (' + ex.toString().substr(0,20) + ')</span>');
         }
-      }
+      });
 
       if(eObj.__proto__) {
         try {
@@ -520,6 +521,7 @@
             o[cat] = Array.concat(o[cat], toMerge[cat]);
           }
         } catch(ex) {
+          console.log(ex);
         }
       }
     }
@@ -613,6 +615,7 @@
           print('(null)');
         }
       } catch(ex) {
+        console.log(ex);
         print(tmp.join(' ') + ': ' + ex.message);
       }
     }
@@ -621,11 +624,14 @@
   }
 
   function getMembers(obj) {
-    return _.uniq([].concat(
-      Object.keys(obj),
-      Object.getOwnPropertyNames(obj)
-    ).sort());
+    var ret = [];
+    while(!_.isStr(obj) && _.isObj(obj) && obj) {
+     ret = ret.concat( Object.keys(obj), Object.getOwnPropertyNames(obj) );
+     obj = Object.getPrototypeOf(obj);
+    } 
+    return _.uniq(ret).sort();
   }
+  self.getMembers = getMembers;
 
   // get the maximum prefix between two strings
   function prefixCheck(str1, str2) {
@@ -694,9 +700,9 @@
       try {
         base = runcode(base);
       } catch(ex){
+        console.log(ex);
         print('Failed to expand: ', baseOrig);
       }
-
 
       each(getMembers(base), function(ix) {
         if(ix.toLowerCase().indexOf(needle) ==  0) {
