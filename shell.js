@@ -582,6 +582,7 @@
       $cmd[tmp[0]](tmp);
     } else {
       try {
+        console.log("return " + tmp.join(' '));
         $._ = (new Function("", "return " + tmp.join(' ')))();
         var div = element('div');
 
