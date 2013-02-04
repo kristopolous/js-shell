@@ -606,9 +606,13 @@
     var ret = [];
     while( ['dom','function','object'].indexOf(_.getType(obj)) > -1) {
      ret = ret.concat( 
-       Object.keys(obj.prototype),
        Object.getOwnPropertyNames(obj) 
      );
+
+     if(_.isObject(obj.prototype)) {
+       ret = ret.concat(Object.keys(obj.prototype));
+     }
+
      obj = Object.getPrototypeOf(obj);
     } 
 
