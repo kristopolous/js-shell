@@ -1,5 +1,5 @@
 # JS-Shell
-Just a debugging shell ... go here for a demo: http://qaa.ath.cx/js-shell/shell.html
+Just a debugging shell ... go here for a demo: http://9ol.es/js-shell/shell.html
 
 # Usage
 
