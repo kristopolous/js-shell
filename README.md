@@ -17,6 +17,10 @@ Once in you have
  * clickable stack-traces
  * clickable auto-complete
 
+You can also just do
+
+    <script src=https://raw.github.com/kristopolous/js-shell/master/shell.min.js></script>
+
 Tired of firebug and chrome inspector giving you no auto-complete when people do OOP in Javascript way way wrong (I'm looking at you, yfiles for html, you total piece of absolute shit) ... well this will fix that stupidity.
 
 Have fun and move away from those crap libraries as quick as possible.
